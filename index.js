@@ -28,6 +28,7 @@ async function run() {
     
     const db=await client.db("book-nook")
     const roomsCollection = await db.collection("rooms")
+    const bookingsCollection = await db.collection("bookings")
 
     app.get('/homerooms',async(req,res)=>{
         const cursor =   roomsCollection.find().limit(6);
@@ -54,6 +55,43 @@ async function run() {
         const room = await roomsCollection.findOne(query)
 
         res.send(room)
+    })
+     app.get('/mybookings/:id',async(req,res)=>{
+        const {id}= await req.params
+        
+        console.log(id)
+        
+
+        const result = await bookingsCollection.find({'bookerId':id}).toArray()
+
+        res.send(result)
+    })
+
+    app.post('/bookings',async(req,res)=>{
+        
+      const newRoom = req.body
+     
+
+      const roomId = newRoom.room._id;
+      console.log(roomId)
+
+      const existingRoom = await bookingsCollection.findOne({'room._id':roomId})
+
+      console.log(existingRoom)
+
+      if (existingRoom) {
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: "This room is already booked!" 
+      })
+    }
+    else{
+      const result = await bookingsCollection.insertOne(newRoom)
+      res.send(result)
+    }
+
+      
     })
 
 
