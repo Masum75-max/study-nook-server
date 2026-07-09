@@ -1,4 +1,5 @@
 require('dotenv').config(); 
+const { createRemoteJWKSet, jwtVerify } = require ('jose-cjs');
 const express = require('express'); 
 const cors = require('cors'); 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -11,6 +12,7 @@ const uri = process.env.CONNECTION_STRING;
 app.use(cors()); 
 app.use(express.json());
 
+const jwks = createRemoteJWKSet(new URL(`${process.env.API_BASE_URL}/api/auth/jwks`));
 
 
 const client = new MongoClient(uri, {
@@ -24,7 +26,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     
-    await client.connect();
+    // await client.connect();
     
     const db=await client.db("book-nook")
     const roomsCollection = await db.collection("rooms")
@@ -38,7 +40,41 @@ async function run() {
         res.send(homeRooms)
     })
 
-    app.get('/allrooms',async(req,res)=>{
+    app.get('/allrooms',async(req,res,next)=>{
+
+
+      const headers = req?.headers?.authorization
+      console.log(headers)
+
+      if(!headers){
+        return res.status(401).json({ 
+          message: "Unauthorized" 
+        })
+      }
+
+      const token = headers.split(" ")[1]
+      console.log(token)
+
+      if(!token) {
+        return res.status(401).json({ 
+      
+          message: "Unauthorized" 
+        })
+      }
+
+     try{
+       const {payload} = await jwtVerify(token,jwks)
+
+       console.log(payload)
+
+       next()
+     }
+     catch(err){
+      return res.status(401).json({ 
+        message: "Unauthorized" 
+      })
+     }
+    },async(req,res)=>{
 
         const cursor = roomsCollection.find()
 
@@ -46,8 +82,43 @@ async function run() {
 
         res.send(allRooms)
     })
-   
-    app.get('/allrooms/:id',async(req,res)=>{
+
+    app.post('/allrooms',async(req,res)=>{
+        const newRoom = req.body
+
+        const result = await roomsCollection.insertOne(newRoom)
+
+        res.send(result)
+    })
+
+    app.get('/allrooms/:id',async(req,res,next)=>{
+
+      const headers =req?.headers?.authorization
+
+      if(!headers){
+        return res.status(401).json({
+          message: "Unauthorized"
+        })
+      }
+
+      const token = headers.split(" ")[1]
+
+      if(!token){
+        return res.status(401).json({
+          message: "Unauthorized"
+        })
+      }
+
+      try{
+        const {payload} = await jwtVerify(token,jwks)
+          next()
+      }
+      catch(err){
+        return res.status(401).json({
+          message: "Unauthorized"
+        })
+      }
+    },async(req,res)=>{
         const id =  req.params.id
 
         const query ={ _id : new ObjectId(id)}
@@ -56,13 +127,45 @@ async function run() {
 
         res.send(room)
     })
-     app.get('/mybookings/:id',async(req,res)=>{
+     app.get('/mybookings/:id',async(req,res,next)=>{
+
+      console.log("my bookings er authorization hit hoise")
+         const headers = req?.headers?.authorization
+
+         if(!headers){
+          return res.status(401).json({
+            message: "Unauthorized"
+          })
+         }
+
+          const token = headers.split(" ")[1]
+
+          if(!token){
+            return res.status(401).json({
+              message: "Unauthorized"
+            })
+          }
+
+          try{
+            const {payload} = await jwtVerify(token,jwks)
+
+            console.log("My bookings er authorization er payload hit hoise")
+            next()
+          }
+          catch(err){
+            return res.status(401).json({
+              message: "Unauthorized"
+            })
+          }
+     },async(req,res)=>{
         const {id}= await req.params
         
-        console.log(id)
+        console.log("id from user",id)
         
 
         const result = await bookingsCollection.find({'bookerId':id}).toArray()
+
+    
 
         res.send(result)
     })
