@@ -12,7 +12,7 @@ const uri = process.env.CONNECTION_STRING;
 app.use(cors()); 
 app.use(express.json());
 
-const jwks = createRemoteJWKSet(new URL(`${process.env.API_BASE_URL}/api/auth/jwks`));
+const jwks = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
 
 
 const client = new MongoClient(uri, {
@@ -26,11 +26,15 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     
-    // await client.connect();
+    //  await client.connect();
     
     const db=await client.db("book-nook")
     const roomsCollection = await db.collection("rooms")
     const bookingsCollection = await db.collection("bookings")
+
+    app.get('/',(req,res)=>{
+        res.send("Book Nook server is running")
+    })
 
     app.get('/homerooms',async(req,res)=>{
         const cursor =   roomsCollection.find().limit(6);
@@ -40,41 +44,7 @@ async function run() {
         res.send(homeRooms)
     })
 
-    app.get('/allrooms',async(req,res,next)=>{
-
-
-      const headers = req?.headers?.authorization
-      console.log(headers)
-
-      if(!headers){
-        return res.status(401).json({ 
-          message: "Unauthorized" 
-        })
-      }
-
-      const token = headers.split(" ")[1]
-      console.log(token)
-
-      if(!token) {
-        return res.status(401).json({ 
-      
-          message: "Unauthorized" 
-        })
-      }
-
-     try{
-       const {payload} = await jwtVerify(token,jwks)
-
-       console.log(payload)
-
-       next()
-     }
-     catch(err){
-      return res.status(401).json({ 
-        message: "Unauthorized" 
-      })
-     }
-    },async(req,res)=>{
+    app.get('/allrooms',async(req,res)=>{
 
         const cursor = roomsCollection.find()
 
