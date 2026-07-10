@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     
-    //  await client.connect();
+     await client.connect();
     
     const db=await client.db("book-nook")
     const roomsCollection = await db.collection("rooms")
@@ -64,6 +64,7 @@ async function run() {
     app.get('/allrooms/:id',async(req,res,next)=>{
 
       const headers =req?.headers?.authorization
+    
 
       if(!headers){
         return res.status(401).json({
@@ -73,6 +74,7 @@ async function run() {
 
       const token = headers.split(" ")[1]
 
+     
       if(!token){
         return res.status(401).json({
           message: "Unauthorized"
@@ -81,6 +83,7 @@ async function run() {
 
       try{
         const {payload} = await jwtVerify(token,jwks)
+      
           next()
       }
       catch(err){
@@ -99,7 +102,7 @@ async function run() {
     })
      app.get('/mybookings/:id',async(req,res,next)=>{
 
-      console.log("my bookings er authorization hit hoise")
+      
          const headers = req?.headers?.authorization
 
          if(!headers){
@@ -119,7 +122,7 @@ async function run() {
           try{
             const {payload} = await jwtVerify(token,jwks)
 
-            console.log("My bookings er authorization er payload hit hoise")
+        
             next()
           }
           catch(err){
@@ -130,13 +133,13 @@ async function run() {
      },async(req,res)=>{
         const {id}= await req.params
         
-        console.log("id from user",id)
+      
         
 
         const result = await bookingsCollection.find({'bookerId':id}).toArray()
 
     
-
+      
         res.send(result)
     })
 
@@ -146,11 +149,11 @@ async function run() {
      
 
       const roomId = newRoom.room._id;
-      console.log(roomId)
+    
 
       const existingRoom = await bookingsCollection.findOne({'room._id':roomId})
 
-      console.log(existingRoom)
+     
 
       if (existingRoom) {
       
@@ -178,5 +181,5 @@ run().catch(console.dir);
 
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port: ${PORT}`);
+  
 });
