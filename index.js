@@ -92,7 +92,7 @@ async function run() {
         })
       }
     },async(req,res)=>{
-        const id =  req.params.id
+        const id = await req.params.id
 
         const query ={ _id : new ObjectId(id)}
 
